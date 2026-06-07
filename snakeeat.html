@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>野外求生大作戰：動植物貪吃蛇 | Wild Survival Snake</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        nature: {
+                            slate: '#0f2d1e',
+                            emerald: '#059669',
+                            crimson: '#dc2626',
+                            amber: '#d97706',
+                            blue: '#0284c7'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f4fbf7 0%, #f8fafc 100%);
+            color: #0f2d1e;
+            overflow-x: hidden;
+            /* Prevent default stretch bounce on mobile iOS */
+            overscroll-behavior-y: contain; 
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(240, 245, 242, 0.5);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.25);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.5);
+        }
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scanline::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: rgba(16, 185, 129, 0.02);
+            animation: scanline 8s linear infinite;
+            pointer-events: none;
+        }
+        /* Mobile Touch optimizations: eliminates touch delay & prevents double-tap zoom */
+        .touch-btn {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        /* Lock focus styles on virtual controls */
+        .touch-btn:active {
+            transform: scale(0.92);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Top HUD Navigation Bar (Light White Style) -->
+    <header class="border-b border-emerald-100 bg-white/95 backdrop-blur-md sticky top-0 z-30 px-4 md:px-6 py-4 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-emerald-600 to-emerald-500 p-2 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.15)] shrink-0">
+                    <i class="fa-solid fa-compass text-xl md:text-2xl text-white animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-black bg-gradient-to-r from-emerald-700 via-teal-600 to-amber-600 bg-clip-text text-transparent tracking-wide">
+                        野外求生大作戰：動植物貪吃蛇
+                    </h1>
+                    <p class="text-[9px] md:text-[10px] text-emerald-600 font-bold tracking-widest uppercase">Wild Survival Snake • Double-Platform Edition</p>
+                </div>
+            </div>
+
+            <!-- Active KPI Panel -->
+            <div class="flex flex-wrap items-center justify-center gap-3 md:gap-4">
+                <!-- Vitality Bar -->
+                <div class="bg-white border border-emerald-100 rounded-xl px-3 py-1.5 min-w-[120px] md:min-w-[140px] shadow-sm">
+                    <div class="flex justify-between items-center mb-1 text-[9px] font-bold text-slate-500 uppercase">
+                        <span>🛡️ 生命 Vitality</span>
+                        <span id="kpi-reputation-txt" class="text-emerald-600 font-black">100%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-emerald-100/30">
+                        <div id="kpi-reputation-bar" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <!-- Energy Counter -->
+                <div class="bg-white border border-emerald-100 rounded-xl px-3 py-1 flex items-center gap-2 min-w-[110px] md:min-w-[130px] shadow-sm">
+                    <span class="text-lg">⚡</span>
+                    <div>
+                        <span class="block text-[8px] text-slate-500 font-bold uppercase">生存能量 Energy</span>
+                        <span id="kpi-budget-txt" class="text-sm md:text-base font-black text-amber-600">5,000</span>
+                    </div>
+                </div>
+
+                <!-- Evolution Tier -->
+                <div class="bg-white border border-emerald-100 rounded-xl px-3 py-1 flex items-center gap-2 min-w-[90px] md:min-w-[100px] shadow-sm">
+                    <span class="text-lg">🦖</span>
+                    <div>
+                        <span class="block text-[8px] text-slate-500 font-bold uppercase">進化階級 Stage</span>
+                        <span id="kpi-stage-txt" class="text-sm md:text-base font-black text-sky-600">幼年體</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Grid (Left 2, Center 7, Right 3 Column Ratio) -->
+    <!-- -->
+    <main class="flex-1 w-full max-w-7xl mx-auto p-3 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 items-stretch">
+        
+        <!-- Left Column: Ecology Glossary & Survival Leaderboard (2 Columns) -->
+        <section class="lg:col-span-2 flex flex-col gap-4 order-2 lg:order-1">
+            
+            <!-- Leaderboard Card -->
+            <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+                <h3 class="font-extrabold text-xs text-amber-600 uppercase tracking-widest border-b border-emerald-100 pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span>👑 頂級探險家排行</span>
+                </h3>
+                <div id="leaderboard-view" class="space-y-2 text-[11px] max-h-[160px] lg:max-h-none overflow-y-auto custom-scrollbar">
+                    <!-- Hydrated via JS localStorage -->
+                </div>
+
+                <!-- Manual Backup Actions for Google Sites Embedded sandbox -->
+                <div class="border-t border-emerald-50 mt-1 pt-2">
+                    <span class="text-[9px] text-slate-400 font-black uppercase block mb-1">Google Sites 備份工具</span>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="exportLeaderboard()" class="touch-btn py-1 px-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-bold text-slate-600 transition-all flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-file-export text-[8px]"></i> 📤 匯出
+                        </button>
+                        <button onclick="importLeaderboard()" class="touch-btn py-1 px-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-bold text-slate-600 transition-all flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-file-import text-[8px]"></i> 📥 匯入
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Rules Guidelines -->
+            <div class="glass-panel rounded-2xl p-4 flex-1 flex flex-col justify-between min-h-[120px] lg:min-h-[150px]">
+                <div>
+                    <h3 class="font-extrabold text-xs text-emerald-700 uppercase tracking-widest border-b border-emerald-100 pb-2 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-tree"></i>
+                        <span>荒野求生法則</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">
+                        操控 <b>探險家 (👨‍🌾/👩‍🌾)</b> 捕食<b>「動物 (綠標)」</b>以補給生命與能量。<br><br>
+                        ⚠️ <b>警告：</b>嚴禁觸碰帶紅色警示的 **「劇毒與尖刺植物」**，否則會食物中毒或物理扎傷！
+                    </p>
+                </div>
+                <!-- Interactive Controls Notice -->
+                <div class="mt-3 p-1.5 bg-emerald-50/50 rounded-lg border border-emerald-100/50 text-[10px] text-emerald-800 font-medium">
+                    📲 <b>手機玩法：</b>可使用下方的實體方向盤，或直接在**遊戲畫布上划動手指**控制！
+                </div>
+            </div>
+        </section>
+
+        <!-- Center Column: Game Board Canvas (7 Columns - Large Area) -->
+        <section class="lg:col-span-7 flex flex-col items-center justify-center gap-4 order-1 lg:order-2">
+            
+            <!-- Canvas Frame (Light Theme, Mint Board) -->
+            <div id="canvas-container" class="relative w-full aspect-square bg-white rounded-2xl border-2 border-emerald-100 shadow-[0_10px_30px_rgba(16,185,129,0.06)] overflow-hidden scanline group">
+                <!-- HTML5 Canvas -->
+                <canvas id="game-canvas" class="w-full h-full block touch-none"></canvas>
+
+                <!-- Start Screen Overlay -->
+                <div id="start-overlay" class="absolute inset-0 bg-white/95 z-20 flex flex-col items-center justify-center p-6 text-center">
+                    <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-tr from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-3 md:mb-4 shadow-lg shadow-emerald-500/10 animate-bounce">
+                        <i class="fa-solid fa-tent text-2xl md:text-3xl text-white"></i>
+                    </div>
+                    <h2 class="text-lg md:text-xl font-black text-slate-800 mb-2">荒野動植物求生大作戰</h2>
+                    <p class="text-[11px] md:text-xs text-slate-500 max-w-xs mb-4 md:mb-5 leading-relaxed">
+                        在不誤食任何「致命劇毒植物」的前提下，帶領冒險者獵捕野獸、補給能量，爭取載入帝國排行名冊！
+                    </p>
+
+                    <!-- Manager Customization Form -->
+                    <div class="w-full max-w-xs mb-4 md:mb-5 space-y-3 text-left text-slate-800">
+                        <div>
+                            <label class="block text-[9px] md:text-[10px] font-black text-slate-500 uppercase mb-1">✒️ 探險家大名</label>
+                            <input type="text" id="input-manager-name" value="貝爾" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-emerald-500 transition-all">
+                        </div>
+                    </div>
+
+                    <button onclick="startGame()" class="touch-btn px-6 md:px-8 py-2.5 md:py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md tracking-wider uppercase transition-all">
+                        進入叢林（開始遊戲）
+                    </button>
+                </div>
+
+                <!-- Game Over Overlay -->
+                <div id="gameover-overlay" class="absolute inset-0 bg-white/95 z-20 flex flex-col items-center justify-center p-6 text-center hidden">
+                    <div class="w-12 h-12 bg-rose-50 border border-rose-500 text-rose-600 rounded-full flex items-center justify-center mb-3 animate-pulse">
+                        <i class="fa-solid fa-skull-crossbones text-xl"></i>
+                    </div>
+                    <h2 class="text-lg md:text-xl font-black text-rose-600 mb-1">生存終止！</h2>
+                    <p id="gameover-reason" class="text-[11px] md:text-xs text-slate-500 max-w-xs mb-4">
+                        由於生命體徵大跌或缺乏生存能量，探險家在荒野深處力竭昏迷。
+                    </p>
+
+                    <div class="bg-slate-50 border border-emerald-100 rounded-xl p-3 w-full max-w-xs mb-4 grid grid-cols-2 gap-2 text-left text-xs">
+                        <div>
+                            <span class="block text-[8px] md:text-[9px] text-slate-500 font-bold uppercase">最終求生隊伍</span>
+                            <span id="final-headcount" class="text-sm md:text-base font-bold text-slate-800">0 節</span>
+                        </div>
+                        <div>
+                            <span class="block text-[8px] md:text-[9px] text-slate-500 font-bold uppercase">最後累積能量</span>
+                            <span id="final-budget" class="text-sm md:text-base font-bold text-amber-600">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Record Submit Sub-form -->
+                    <div id="record-submit-box" class="w-full max-w-xs mb-4 hidden">
+                        <span class="text-[9px] text-emerald-700 font-bold block mb-1">恭喜擠進排行榜！請確認您的大名以登錄排名：</span>
+                        <div class="flex gap-2">
+                            <input type="text" id="leaderboard-name-input" class="flex-1 bg-slate-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none">
+                            <button onclick="submitLeaderboardRecord()" class="touch-btn px-4 py-1.5 bg-emerald-500 text-white font-bold text-xs rounded-lg hover:bg-emerald-600 transition-all">登錄</button>
+                        </div>
+                    </div>
+
+                    <button onclick="resetGame()" class="touch-btn px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all border border-slate-200">
+                        重新探索（重新開始）
+                    </button>
+                </div>
+
+                <!-- Pause Overlay -->
+                <div id="pause-overlay" class="absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center p-6 text-center hidden">
+                    <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                        <i class="fa-solid fa-pause text-xl text-slate-600"></i>
+                    </div>
+                    <h3 class="text-sm md:text-base font-bold text-slate-800 mb-4">地圖整頓中（暫停）</h3>
+                    <button onclick="togglePause()" class="touch-btn px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-xl transition-all">
+                        繼續探索
+                    </button>
+                </div>
+            </div>
+
+            <!-- Enhanced Mobile Directional D-Pad Buttons (Slightly larger, highly tactile) -->
+            <div class="grid grid-cols-3 gap-2 w-full max-w-[210px] lg:hidden mt-1 px-2 select-none">
+                <div></div>
+                <button id="ctrl-up" class="touch-btn h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center active:bg-emerald-50 active:border-emerald-300 shadow-sm transition-all"><i class="fa-solid fa-chevron-up text-lg text-slate-600"></i></button>
+                <div></div>
+                <button id="ctrl-left" class="touch-btn h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center active:bg-emerald-50 active:border-emerald-300 shadow-sm transition-all"><i class="fa-solid fa-chevron-left text-lg text-slate-600"></i></button>
+                <div onclick="togglePause()" class="touch-btn bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center text-[8px] text-slate-500 font-bold uppercase shadow-inner cursor-pointer active:bg-slate-100">
+                    <i class="fa-solid fa-pause text-xs mb-0.5"></i>
+                    <span>PAUSE</span>
+                </div>
+                <button id="ctrl-right" class="touch-btn h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center active:bg-emerald-50 active:border-emerald-300 shadow-sm transition-all"><i class="fa-solid fa-chevron-right text-lg text-slate-600"></i></button>
+                <div></div>
+                <button id="ctrl-down" class="touch-btn h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center active:bg-emerald-50 active:border-emerald-300 shadow-sm transition-all"><i class="fa-solid fa-chevron-down text-lg text-slate-600"></i></button>
+                <div></div>
+            </div>
+
+            <!-- PC Keyboard guide -->
+            <div class="hidden lg:flex items-center gap-3 text-[11px] text-slate-400 font-medium">
+                <span>控制方式：鍵盤 <kbd class="px-1.5 py-0.5 bg-white rounded border border-slate-200 shadow-sm text-slate-600">W</kbd> <kbd class="px-1.5 py-0.5 bg-white rounded border border-slate-200 shadow-sm text-slate-600">A</kbd> <kbd class="px-1.5 py-0.5 bg-white rounded border border-slate-200 shadow-sm text-slate-600">S</kbd> <kbd class="px-1.5 py-0.5 bg-white rounded border border-slate-200 shadow-sm text-slate-600">D</kbd> 或方向鍵</span>
+                <span>•</span>
+                <span>按 <kbd class="px-1.5 py-0.5 bg-white rounded border border-slate-200 shadow-sm text-slate-600">空白鍵</kbd> 暫停</span>
+            </div>
+        </section>
+
+        <!-- Right Column: Survival Upgrades Shop & Wildlife Log (3 Columns) -->
+        <section class="lg:col-span-3 flex flex-col gap-4 order-3">
+            
+            <!-- Survival Upgrades Shop -->
+            <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+                <h3 class="font-extrabold text-xs text-amber-600 uppercase tracking-widest border-b border-emerald-100 pb-2 flex items-center justify-between">
+                    <span>🛒 基因突變商城</span>
+                    <i class="fa-solid fa-basket-shopping"></i>
+                </h3>
+
+                <div class="space-y-2.5">
+                    <!-- Perk 1: Sluggish Metabolism -->
+                    <button onclick="buyPerk('attendance')" id="btn-perk-attendance" class="touch-btn w-full text-left p-2.5 bg-white hover:bg-slate-50 border border-slate-200/60 rounded-xl transition-all flex justify-between items-center group/perk shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl group-hover/perk:scale-110 transition-all">🌿</span>
+                            <div>
+                                <span class="block text-[11px] font-bold text-slate-700">消化系統進化</span>
+                                <span class="text-[9px] text-slate-500">使行動速度放慢 15%</span>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0 ml-1">
+                            <span class="block text-xs font-black text-amber-600">300</span>
+                            <span id="status-perk-attendance" class="text-[9px] text-slate-500 font-bold bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">未獲得</span>
+                        </div>
+                    </button>
+
+                    <!-- Perk 2: Antidote Serum -->
+                    <button onclick="buyPerk('advisor')" id="btn-perk-advisor" class="touch-btn w-full text-left p-2.5 bg-white hover:bg-slate-50 border border-slate-200/60 rounded-xl transition-all flex justify-between items-center group/perk shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl group-hover/perk:scale-110 transition-all">🧪</span>
+                            <div>
+                                <span class="block text-[11px] font-bold text-slate-700">抗毒血清儲備</span>
+                                <span class="text-[9px] text-slate-500">完全免疫 1 次誤食毒害</span>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0 ml-1">
+                            <span class="block text-xs font-black text-amber-600">600</span>
+                            <span id="status-perk-advisor" class="text-[9px] text-slate-500 font-bold bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">無儲備</span>
+                        </div>
+                    </button>
+
+                    <!-- Perk 3: Apex Predator Gene -->
+                    <button onclick="buyPerk('branding')" id="btn-perk-branding" class="touch-btn w-full text-left p-2.5 bg-white hover:bg-slate-50 border border-slate-200/60 rounded-xl transition-all flex justify-between items-center group/perk shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl group-hover/perk:scale-110 transition-all">🧬</span>
+                            <div>
+                                <span class="block text-[11px] font-bold text-slate-700">頂級掠食者基因</span>
+                                <span class="text-[9px] text-slate-500">生命升至120%, 獵食額外+20%</span>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0 ml-1">
+                            <span class="block text-xs font-black text-amber-600">1,000</span>
+                            <span id="status-perk-branding" class="text-[9px] text-slate-500 font-bold bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">未覺醒</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Wildlife Log Feed -->
+            <div class="glass-panel rounded-2xl p-4 flex-1 flex flex-col min-h-[160px] lg:min-h-[180px]">
+                <h3 class="font-extrabold text-xs text-sky-600 uppercase tracking-widest border-b border-emerald-100 pb-2 mb-2 flex items-center justify-between">
+                    <span>📡 求生實時回報日誌</span>
+                    <i class="fa-solid fa-satellite-dish"></i>
+                </h3>
+                <div id="live-audit-log" class="flex-1 overflow-y-auto text-[10px] space-y-2 text-slate-500 pr-1 max-h-[140px] lg:max-h-[180px] custom-scrollbar">
+                    <div class="p-2 rounded bg-slate-50 border-l-2 border-emerald-500 shadow-sm">
+                        <span class="text-[8px] text-slate-400 font-bold">14:30:00</span>
+                        <p class="text-slate-600">🌲 求生啟動：探險家已降落，即將展開獵捕之旅。注意致命毒植物！</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 bg-white py-3.5 px-6 text-center text-xs text-slate-400 shadow-inner">
+        <p>© 2026 Wildlife Survival Snake Game • 叢林大自然生態模擬互動雙端優化版</p>
+    </footer>
+
+    <script>
+        // --- Web Audio Synthesizer for Retro Game Tones ---
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        function playSound(type) {
+            try {
+                initAudio();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'eat_compliant') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'eat_violation') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(40, now + 0.4);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                    osc.start(now);
+                    osc.stop(now + 0.45);
+                } else if (type === 'milestone') {
+                    const notes = [293.66, 349.23, 440.00, 587.33];
+                    notes.forEach((freq, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        g.gain.setValueAtTime(0.12, now + idx * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.3);
+                        o.start(now + idx * 0.08);
+                        o.stop(now + idx * 0.08 + 0.3);
+                    });
+                } else if (type === 'buy') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(659.25, now);
+                    osc.frequency.setValueAtTime(987.77, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            } catch (e) {
+                console.log("Audio context blocked.");
+            }
+        }
+
+        // --- STREAMING_CHUNK:Defining_Ecology_and_Grids... ---
+        const GRID_SIZE = 20;
+        let canvas = document.getElementById("game-canvas");
+        let ctx = canvas.getContext("2d");
+        let cellSize;
+
+        let snake = [];
+        let direction = 'RIGHT';
+        let nextDirection = 'RIGHT';
+        let edibleItems = []; 
+        let violations = [];  
+        
+        let reputation = 100; // Vitality
+        let budget = 5000;    // Survival Energy
+        let managerName = "貝爾";
+        let gameActive = false;
+        let isPaused = false;
+        let gameLoopInterval = null;
+        let baseSpeed = 180; 
+
+        let upgrades = {
+            attendance: false,
+            advisor: false,
+            branding: false
+        };
+
+        const ANIMAL_ROSTER = [
+            { id: 'c1', name: '肥美野雞', emoji: '🐔', law: '蛋白質', reward: 350, rep: 5 },
+            { id: 'c2', name: '森林野兔', emoji: '🐰', law: '維生素', reward: 250, rep: 3 },
+            { id: 'c3', name: '溪流鱒魚', emoji: '🐟', law: '核心油脂', reward: 400, rep: 8 },
+            { id: 'c4', name: '野生山豬', emoji: '🐗', law: '極致熱量', reward: 600, rep: 12 },
+            { id: 'c5', name: '靈巧梅花鹿', emoji: '🦌', law: '頂級盛宴', reward: 800, rep: 15 }
+        ];
+
+        const PLANT_ROSTER = [
+            { id: 'v1', name: '劇毒紅菇', emoji: '🍄', law: '毒傘肽', fine: 1500, repPenalty: 25 },
+            { id: 'v2', name: '尖刺仙人掌', emoji: '🌵', law: '刺針傷害', fine: 1200, repPenalty: 20 },
+            { id: 'v3', name: '致命夾竹桃', emoji: '🌿', law: '強心苷', fine: 1800, repPenalty: 30 },
+            { id: 'v4', name: '刺人蕁麻草', emoji: '🌱', law: '蟻酸灼傷', fine: 800, repPenalty: 12 },
+            { id: 'v5', name: '劇毒斷腸草', emoji: '🥀', law: '鉤吻素', fine: 2500, repPenalty: 40 }
+        ];
+
+        // --- STREAMING_CHUNK:Implementing_Leaderboard_Backup... ---
+        function getLeaderboard() {
+            try {
+                let records = localStorage.getItem('survival_snake_leaderboard_light');
+                if (!records) {
+                    const defaults = [
+                        { name: '貝爾•格里爾斯', energy: 12000, tier: '萬獸之王' },
+                        { name: '埃德•斯塔福德', energy: 8500, tier: '頂級掠食者' },
+                        { name: '馬蓋先', energy: 5500, tier: '頂級掠食者' },
+                        { name: '生存小白', energy: 1500, tier: '幼年體' }
+                    ];
+                    localStorage.setItem('survival_snake_leaderboard_light', JSON.stringify(defaults));
+                    return defaults;
+                }
+                return JSON.parse(records);
+            } catch (e) {
+                // Return fallback memory array if sandbox prevents localStorage
+                return [
+                    { name: '貝爾•格里爾斯', energy: 12000, tier: '萬獸之王' },
+                    { name: '生存探險者', energy: 3000, tier: '頂級掠食者' }
+                ];
+            }
+        }
+
+        function saveLeaderboard(records) {
+            try {
+                localStorage.setItem('survival_snake_leaderboard_light', JSON.stringify(records));
+            } catch (e) {
+                console.warn("Storage sandbox active. Progress preserved in-memory only.");
+            }
+        }
+
+        function updateLeaderboardUI() {
+            const records = getLeaderboard();
+            const container = document.getElementById("leaderboard-view");
+            container.innerHTML = "";
+
+            records.forEach((rec, idx) => {
+                let badgeColor = "bg-slate-100 text-slate-700";
+                if (idx === 0) badgeColor = "bg-amber-100 text-amber-800 font-extrabold";
+                else if (idx === 1) badgeColor = "bg-slate-200 text-slate-800";
+                
+                container.innerHTML += `
+                    <div class="p-2 rounded-lg border border-slate-100 flex items-center justify-between ${idx === 0 ? 'border-amber-200 bg-amber-50/30' : 'bg-slate-50/50'}">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-4 h-4 rounded text-center block text-[9px] ${badgeColor}">${idx+1}</span>
+                            <span class="font-bold truncate max-w-[85px]">${rec.name}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="block font-black text-emerald-700 leading-none">${rec.energy.toLocaleString()}</span>
+                            <span class="text-[8px] text-slate-400 block">${rec.tier}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Export/Import Leaderboard strings manually to fight off Google Sites Embed sandbox wipe
+        function exportLeaderboard() {
+            const records = getLeaderboard();
+            const jsonStr = btoa(encodeURIComponent(JSON.stringify(records)));
+            const tempInput = document.createElement("input");
+            document.body.appendChild(tempInput);
+            tempInput.value = jsonStr;
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            writeToAuditLog("📤 排行資料已生成，並自動複製到您的剪貼簿！請妥善保存此代碼。", "important");
+        }
+
+        function importLeaderboard() {
+            const code = prompt("請貼上您先前備份的排行代碼：");
+            if (code) {
+                try {
+                    const parsed = JSON.parse(decodeURIComponent(atob(code)));
+                    if (Array.isArray(parsed)) {
+                        saveLeaderboard(parsed);
+                        updateLeaderboardUI();
+                        writeToAuditLog("📥 排行備份還原成功！數據已同步。", "important");
+                    }
+                } catch (e) {
+                    writeToAuditLog("❌ 代碼解析錯誤！請確保您複製的是完整的備份字串。", "violation");
+                }
+            }
+        }
+
+        function checkLeaderboardEligibility(score) {
+            const records = getLeaderboard();
+            if (records.length < 5) return true;
+            return score > records[records.length - 1].energy;
+        }
+
+        function submitLeaderboardRecord() {
+            const inputField = document.getElementById("leaderboard-name-input");
+            const finalName = inputField.value.trim() || "無名探險家";
+            
+            const currentTier = document.getElementById("kpi-stage-txt").innerText;
+            const records = getLeaderboard();
+            
+            records.push({
+                name: finalName,
+                energy: budget,
+                tier: currentTier
+            });
+
+            records.sort((a, b) => b.energy - a.energy);
+            if (records.length > 5) {
+                records.pop();
+            }
+
+            saveLeaderboard(records);
+            updateLeaderboardUI();
+
+            document.getElementById("record-submit-box").classList.add("hidden");
+            writeToAuditLog(`🏆 榮譽登錄：探險家【${finalName}】成功載入帝國求生名人名冊！`, 'important');
+        }
+
+        // --- STREAMING_CHUNK:Implementing_Canvas_Sizing_and_Touch_Scroll_Guard... ---
+        function resizeCanvas() {
+            const container = document.getElementById("canvas-container");
+            const containerWidth = container.clientWidth;
+            canvas.width = containerWidth;
+            canvas.height = containerWidth; 
+            cellSize = canvas.width / GRID_SIZE;
+            drawGame();
+        }
+        window.addEventListener("resize", resizeCanvas);
+
+        // Mobile Scroll Guard: Prevent page scrolling when dragging/swiping on the canvas
+        canvas.addEventListener('touchmove', function(e) {
+            if (gameActive && !isPaused) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // --- STREAMING_CHUNK:Implementing_Touch_Swipe_Controls... ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        canvas.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            const threshold = 30; // Minimum distance to register swipe
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (Math.abs(diffX) > threshold) {
+                    if (diffX > 0) {
+                        changeDirection('RIGHT');
+                    } else {
+                        changeDirection('LEFT');
+                    }
+                }
+            } else {
+                if (Math.abs(diffY) > threshold) {
+                    if (diffY > 0) {
+                        changeDirection('DOWN');
+                    } else {
+                        changeDirection('UP');
+                    }
+                }
+            }
+        }
+
+        // Bind mobile virtual d-pad button listeners
+        document.getElementById("ctrl-up").addEventListener("touchstart", function(e) { e.preventDefault(); changeDirection('UP'); }, { passive: false });
+        document.getElementById("ctrl-down").addEventListener("touchstart", function(e) { e.preventDefault(); changeDirection('DOWN'); }, { passive: false });
+        document.getElementById("ctrl-left").addEventListener("touchstart", function(e) { e.preventDefault(); changeDirection('LEFT'); }, { passive: false });
+        document.getElementById("ctrl-right").addEventListener("touchstart", function(e) { e.preventDefault(); changeDirection('RIGHT'); }, { passive: false });
+
+        function startGame() {
+            initAudio();
+            managerName = document.getElementById("input-manager-name").value.trim() || "貝爾";
+            document.getElementById("start-overlay").classList.add("hidden");
+
+            snake = [
+                { x: 10, y: 10, color: '#10b981' }
+            ];
+            direction = 'RIGHT';
+            nextDirection = 'RIGHT';
+            reputation = 100; 
+            budget = 5000;   
+            gameActive = true;
+            isPaused = false;
+
+            document.getElementById("gameover-overlay").classList.add("hidden");
+            document.getElementById("record-submit-box").classList.add("hidden");
+
+            upgrades = { attendance: false, advisor: false, branding: false };
+            resetPerksUI();
+
+            document.getElementById("kpi-budget-txt").innerText = `${budget.toLocaleString()}`;
+            document.getElementById("kpi-stage-txt").innerText = '幼年體';
+            document.getElementById("kpi-stage-txt").className = 'text-base font-black text-slate-400';
+            updateReputationUI();
+
+            edibleItems = [];
+            violations = [];
+            spawnItem('compliant');
+            spawnItem('compliant');
+            spawnItem('violation');
+            spawnItem('violation');
+
+            const logBox = document.getElementById("live-audit-log");
+            logBox.innerHTML = "";
+            writeToAuditLog(`🧭 求生啟動：探險家【${managerName}】空降叢林！生態獵捕正式展開。`, 'important');
+
+            playSound('milestone');
+            restartGameLoop(baseSpeed);
+        }
+
+        // --- STREAMING_CHUNK:Implementing_Spawning_System... ---
+        function spawnItem(category) {
+            let item;
+            if (category === 'compliant') {
+                const template = ANIMAL_ROSTER[Math.floor(Math.random() * ANIMAL_ROSTER.length)];
+                item = { ...template, type: 'compliant' };
+            } else {
+                const template = PLANT_ROSTER[Math.floor(Math.random() * PLANT_ROSTER.length)];
+                item = { ...template, type: 'violation' };
+            }
+
+            let x, y;
+            let occupied = true;
+            let attempts = 0;
+            while (occupied && attempts < 200) {
+                x = Math.floor(Math.random() * GRID_SIZE);
+                y = Math.floor(Math.random() * GRID_SIZE);
+
+                const hitSnake = snake.some(segment => segment.x === x && segment.y === y);
+                const hitEdible = edibleItems.some(i => i.x === x && i.y === y);
+                const hitViolate = violations.some(i => i.x === x && i.y === y);
+
+                if (!hitSnake && !hitEdible && !hitViolate) {
+                    occupied = false;
+                }
+                attempts++;
+            }
+
+            item.x = x;
+            item.y = y;
+
+            if (category === 'compliant') {
+                edibleItems.push(item);
+            } else {
+                violations.push(item);
+            }
+        }
+
+        // --- STREAMING_CHUNK:Implementing_Game_Loop_Physics... ---
+        function updateGame() {
+            if (isPaused || !gameActive) return;
+
+            direction = nextDirection;
+            const head = { ...snake[0] };
+
+            switch (direction) {
+                case 'UP': head.y -= 1; break;
+                case 'DOWN': head.y += 1; break;
+                case 'LEFT': head.x -= 1; break;
+                case 'RIGHT': head.x += 1; break;
+            }
+
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+                triggerGameOver("脫離森林邊界！不慎墜落懸崖，搜救宣告失敗。");
+                return;
+            }
+
+            const selfCollision = snake.some((segment, index) => index > 0 && segment.x === head.x && segment.y === head.y);
+            if (selfCollision) {
+                triggerGameOver("被自身生存藤蔓纏繞窒息！隊伍內部發生擠壓。");
+                return;
+            }
+
+            snake.unshift(head);
+
+            // COMPLIANT: Check Animal Hit
+            const edibleIdx = edibleItems.findIndex(i => i.x === head.x && i.y === head.y);
+            if (edibleIdx !== -1) {
+                const target = edibleItems[edibleIdx];
+                playSound('eat_compliant');
+
+                let repBonus = upgrades.branding ? Math.round(target.rep * 1.2) : target.rep;
+                let cashBonus = upgrades.branding ? Math.round(target.reward * 1.2) : target.reward;
+
+                budget += cashBonus;
+                reputation = Math.min(upgrades.branding ? 120 : 100, reputation + repBonus);
+
+                document.getElementById("kpi-budget-txt").innerText = `${budget.toLocaleString()}`;
+                updateReputationUI();
+
+                writeToAuditLog(`🟢【成功捕獵】吃下「${target.name}」，生命值 +${repBonus}%，生存能量 +${cashBonus}。`, 'normal');
+                snake[0].color = '#10b981';
+
+                edibleItems.splice(edibleIdx, 1);
+                spawnItem('compliant');
+
+                checkEvolution();
+
+                if (Math.random() < 0.25) {
+                    spawnItem('violation');
+                    if (violations.length > 5) violations.shift();
+                }
+            } 
+            // VIOLATION: Check Poison Plant Hit
+            else {
+                const violationIdx = violations.findIndex(i => i.x === head.x && i.y === head.y);
+                if (violationIdx !== -1) {
+                    const target = violations[violationIdx];
+                    playSound('eat_violation');
+
+                    if (upgrades.advisor) {
+                        upgrades.advisor = false;
+                        writeToAuditLog(`🧪【血清免罰】誤觸「${target.name}」！幸好預先注射抗毒血清防護，完全抵免此次傷害！`, 'important');
+                        
+                        const badge = document.getElementById("status-perk-advisor");
+                        badge.innerText = "已耗盡";
+                        badge.className = "text-[9px] text-red-500 font-bold bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded";
+                    } else {
+                        reputation -= target.repPenalty;
+                        budget = Math.max(0, budget - target.fine);
+
+                        document.getElementById("kpi-budget-txt").innerText = `${budget.toLocaleString()}`;
+                        updateReputationUI();
+
+                        writeToAuditLog(`🚨【食物中毒】誤食「${target.name}」！能量暴跌 -${target.fine}，生命體徵重創 -${target.repPenalty}%！`, 'violation');
+                        
+                        if (snake.length > 1) {
+                            snake.pop();
+                        }
+                    }
+
+                    snake[0].color = '#dc2626';
+                    violations.splice(violationIdx, 1);
+                    spawnItem('violation');
+
+                    if (reputation <= 0 || budget <= 0) {
+                        let msg = reputation <= 0 ? "生命體徵耗竭身亡！" : "生存能量赤字力竭昏迷！";
+                        triggerGameOver(msg);
+                        return;
+                    }
+                } else {
+                    snake.pop();
+                }
+            }
+
+            drawGame();
+        }
+
+        // --- STREAMING_CHUNK:Implementing_Rendering_Functions... ---
+        function updateReputationUI() {
+            const txt = document.getElementById("kpi-reputation-txt");
+            const bar = document.getElementById("kpi-reputation-bar");
+            const maxVal = upgrades.branding ? 120 : 100;
+            
+            let percent = Math.max(0, Math.min(100, (reputation / maxVal) * 100));
+            txt.innerText = `${reputation}%`;
+            bar.style.width = `${percent}%`;
+
+            if (percent < 30) {
+                bar.className = "h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-300";
+                txt.className = "text-red-600 font-black";
+            } else if (percent < 60) {
+                bar.className = "h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-300";
+                txt.className = "text-amber-500 font-black";
+            } else {
+                bar.className = "h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300";
+                txt.className = "text-emerald-600 font-black";
+            }
+        }
+
+        function checkEvolution() {
+            const size = snake.length;
+            const tierBadge = document.getElementById("kpi-stage-txt");
+            if (size >= 12) {
+                tierBadge.innerText = "萬獸之王";
+                tierBadge.className = "text-base font-black text-amber-600 animate-pulse";
+            } else if (size >= 6) {
+                tierBadge.innerText = "頂級掠食者";
+                tierBadge.className = "text-base font-black text-sky-600";
+            } else {
+                tierBadge.innerText = "幼年體";
+                tierBadge.className = "text-base font-black text-slate-400";
+            }
+        }
+
+        function writeToAuditLog(text, type = 'normal') {
+            const box = document.getElementById("live-audit-log");
+            const timeStr = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            let borderClass = "border-emerald-300 bg-emerald-50 text-slate-700";
+            if (type === 'important') {
+                borderClass = "border-sky-400 bg-sky-50 text-sky-900 font-bold";
+            } else if (type === 'violation') {
+                borderClass = "border-rose-400 bg-rose-50 text-rose-900 font-extrabold";
+            }
+
+            const item = document.createElement("div");
+            item.className = `p-2 rounded border-l-2 ${borderClass} transition-all duration-300 shadow-sm`;
+            item.innerHTML = `
+                <span class="text-[8px] text-slate-400 font-bold">${timeStr}</span>
+                <p class="leading-relaxed mt-0.5 text-xs">${text}</p>
+            `;
+            box.insertBefore(item, box.firstChild);
+        }
+
+        // --- STREAMING_CHUNK:Drawing_and_Styles_for_Ecology_Elements... ---
+        function drawGame() {
+            ctx.fillStyle = "#ffffff"; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "rgba(16, 185, 129, 0.08)";
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, canvas.height);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(canvas.width, i * cellSize);
+                ctx.stroke();
+            }
+
+            edibleItems.forEach(item => {
+                ctx.font = `${cellSize * 0.75}px Noto Sans TC`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(item.emoji, item.x * cellSize + cellSize / 2, item.y * cellSize + cellSize / 2);
+            });
+
+            violations.forEach(item => {
+                ctx.shadowColor = "#dc2626";
+                ctx.shadowBlur = Math.sin(Date.now() / 150) * 8 + 8;
+                
+                ctx.font = `${cellSize * 0.75}px Noto Sans TC`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(item.emoji, item.x * cellSize + cellSize / 2, item.y * cellSize + cellSize / 2);
+                
+                ctx.shadowBlur = 0; 
+            });
+
+            snake.forEach((seg, idx) => {
+                const sx = seg.x * cellSize;
+                const sy = seg.y * cellSize;
+
+                if (idx === 0) {
+                    const face = idx % 2 === 0 ? "👨‍🌾" : "👩‍🌾";
+                    ctx.font = `${cellSize * 0.8}px Noto Sans TC`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(face, sx + cellSize / 2, sy + cellSize / 2);
+                } else {
+                    ctx.fillStyle = seg.color || "#10b981";
+                    
+                    const r = 5; 
+                    const p = 2.5; 
+                    const w = cellSize - p * 2;
+                    const h = cellSize - p * 2;
+                    const px = sx + p;
+                    const py = sy + p;
+
+                    ctx.beginPath();
+                    ctx.moveTo(px + r, py);
+                    ctx.lineTo(px + w - r, py);
+                    ctx.quadraticCurveTo(px + w, py, px + w, py + r);
+                    ctx.lineTo(px + w, py + h - r);
+                    ctx.quadraticCurveTo(px + w, py + h, px + w - r, py + h);
+                    ctx.lineTo(px + r, py + h - r);
+                    ctx.quadraticCurveTo(px, py + h, px, py + h - r);
+                    ctx.lineTo(px, py + r);
+                    ctx.quadraticCurveTo(px, py, px + r, py);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    if (idx % 2 === 0) {
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = `bold ${cellSize * 0.35}px Inter`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText("ECO", sx + cellSize / 2, sy + cellSize / 2);
+                    }
+                }
+            });
+        }
+
+        // --- STREAMING_CHUNK:Implementing_Shop_System... ---
+        function buyPerk(perkId) {
+            initAudio();
+            let cost = 0;
+            let badgeId = "";
+            let btnId = `btn-perk-${perkId}`;
+
+            if (perkId === 'attendance') {
+                cost = 300;
+                badgeId = "status-perk-attendance";
+            } else if (perkId === 'advisor') {
+                cost = 600;
+                badgeId = "status-perk-advisor";
+            } else if (perkId === 'branding') {
+                cost = 1000;
+                badgeId = "status-perk-branding";
+            }
+
+            if (upgrades[perkId]) {
+                writeToAuditLog("⚠️ 探險家已獲得此基因技術，不需重複購買！");
+                return;
+            }
+
+            if (budget >= cost) {
+                budget -= cost;
+                upgrades[perkId] = true;
+                
+                document.getElementById("kpi-budget-txt").innerText = `${budget.toLocaleString()}`;
+                
+                const badge = document.getElementById(badgeId);
+                badge.innerText = "已覺醒";
+                badge.className = "text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 animate-pulse";
+                
+                document.getElementById(btnId).className = "w-full text-left p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl transition-all flex justify-between items-center shadow-sm";
+                
+                playSound('buy');
+
+                if (perkId === 'attendance') {
+                    writeToAuditLog(`🌿【消化系統改良】成功獲得新陳代謝抑制！前進速度微調放緩 15%，控制力攀升！`, 'important');
+                    restartGameLoop(baseSpeed);
+                } else if (perkId === 'advisor') {
+                    writeToAuditLog(`🧪【抗毒血清儲備】「抗毒血清」購買完畢！在遭遇植物劇毒時免罰 1 次。`, 'important');
+                } else if (perkId === 'branding') {
+                    writeToAuditLog(`🧬【頂級掠食者基因】生命上限爆發增長至 120%！每次捕獵動植物所得額外加成 20%！`, 'important');
+                    reputation = 120;
+                    updateReputationUI();
+                }
+            } else {
+                playSound('eat_violation');
+                writeToAuditLog("❌【基因失敗】累積生存能量不足，無法覺醒基因突變！", 'violation');
+            }
+        }
+
+        function resetPerksUI() {
+            const list = [
+                { id: 'attendance', txt: '未獲得' },
+                { id: 'advisor', txt: '無儲備' },
+                { id: 'branding', txt: '未覺醒' }
+            ];
+            list.forEach(item => {
+                const badge = document.getElementById(`status-perk-${item.id}`);
+                badge.innerText = item.txt;
+                badge.className = "text-[9px] text-slate-500 font-bold bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded";
+                document.getElementById(`btn-perk-${item.id}`).className = "w-full text-left p-2.5 bg-white hover:bg-slate-50 border border-slate-200/60 rounded-xl transition-all flex justify-between items-center group/perk shadow-sm";
+            });
+        }
+
+        // --- STREAMING_CHUNK:Implementing_Controls_and_Keys... ---
+        function changeDirection(newDir) {
+            if (isPaused || !gameActive) return;
+
+            const opposites = {
+                'UP': 'DOWN',
+                'DOWN': 'UP',
+                'LEFT': 'RIGHT',
+                'RIGHT': 'LEFT'
+            };
+
+            if (opposites[newDir] !== direction) {
+                nextDirection = newDir;
+            }
+        }
+
+        function restartGameLoop(speed) {
+            clearInterval(gameLoopInterval);
+            let finalSpeed = upgrades.attendance ? speed * 1.15 : speed;
+            gameLoopInterval = setInterval(updateGame, finalSpeed);
+        }
+
+        function togglePause() {
+            if (!gameActive) return;
+            isPaused = !isPaused;
+            document.getElementById("pause-overlay").classList.toggle("hidden", !isPaused);
+        }
+
+        function triggerGameOver(reason) {
+            gameActive = false;
+            clearInterval(gameLoopInterval);
+            
+            document.getElementById("gameover-reason").innerText = reason;
+            document.getElementById("final-headcount").innerText = `${snake.length} 節`;
+            document.getElementById("final-budget").innerText = `${budget.toLocaleString()}`;
+            
+            const eligible = checkLeaderboardEligibility(budget);
+            const submitBox = document.getElementById("record-submit-box");
+            if (eligible) {
+                document.getElementById("leaderboard-name-input").value = managerName;
+                submitBox.classList.remove("hidden");
+            } else {
+                submitBox.classList.add("hidden");
+            }
+
+            document.getElementById("gameover-overlay").classList.remove("hidden");
+            writeToAuditLog(`💀【探險終止】冒險失敗。原因：${reason}`, 'violation');
+        }
+
+        function resetGame() {
+            document.getElementById("gameover-overlay").classList.add("hidden");
+            document.getElementById("start-overlay").classList.remove("hidden");
+        }
+
+        window.addEventListener("keydown", function (e) {
+            if (e.code === "Space") {
+                e.preventDefault();
+                togglePause();
+                return;
+            }
+
+            let d = null;
+            switch (e.key.toLowerCase()) {
+                case 'arrowup':
+                case 'w': d = 'UP'; break;
+                case 'arrowdown':
+                case 's': d = 'DOWN'; break;
+                case 'arrowleft':
+                case 'a': d = 'LEFT'; break;
+                case 'arrowright':
+                case 'd': d = 'RIGHT'; break;
+            }
+
+            if (d) {
+                e.preventDefault();
+                changeDirection(d);
+            }
+        });
+
+        window.onload = function () {
+            resizeCanvas();
+            updateLeaderboardUI();
+        };
+    </script>
+</body>
+</html>
