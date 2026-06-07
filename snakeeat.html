@@ -149,9 +149,9 @@
             <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
                 <h3 class="font-extrabold text-xs text-amber-600 uppercase tracking-widest border-b border-emerald-100 pb-2 flex items-center gap-2">
                     <i class="fa-solid fa-trophy"></i>
-                    <span>👑 頂級探險家排行</span>
+                    <span>👑 頂級探險家排行 (Top 20)</span>
                 </h3>
-                <div id="leaderboard-view" class="space-y-2 text-[11px] max-h-[160px] lg:max-h-none overflow-y-auto custom-scrollbar">
+                <div id="leaderboard-view" class="space-y-2 text-[11px] max-h-[220px] lg:max-h-[350px] overflow-y-auto custom-scrollbar">
                     <!-- Hydrated via JS localStorage -->
                 </div>
 
@@ -518,6 +518,7 @@
                 let badgeColor = "bg-slate-100 text-slate-700";
                 if (idx === 0) badgeColor = "bg-amber-100 text-amber-800 font-extrabold";
                 else if (idx === 1) badgeColor = "bg-slate-200 text-slate-800";
+                else if (idx === 2) badgeColor = "bg-amber-50 text-amber-700";
                 
                 container.innerHTML += `
                     <div class="p-2 rounded-lg border border-slate-100 flex items-center justify-between ${idx === 0 ? 'border-amber-200 bg-amber-50/30' : 'bg-slate-50/50'}">
@@ -565,7 +566,7 @@
 
         function checkLeaderboardEligibility(score) {
             const records = getLeaderboard();
-            if (records.length < 5) return true;
+            if (records.length < 20) return true;
             return score > records[records.length - 1].energy;
         }
 
@@ -583,7 +584,7 @@
             });
 
             records.sort((a, b) => b.energy - a.energy);
-            if (records.length > 5) {
+            if (records.length > 20) {
                 records.pop();
             }
 
